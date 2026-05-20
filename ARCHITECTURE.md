@@ -57,7 +57,7 @@ Handled by `rfe_bridge.py` (`RFECore2Bridge.fetch_perturbation`):
 
 ```
 coherence        → Transparency(10) +0.03/unit,  Integrity(8)  +0.02/unit
-rhythm           → Resilience(9)    +0.03/unit
+relation         → Resilience(9)    +0.03/unit
 prediction_error → Autonomy(7)      −0.025/unit, Self(4)       −0.015/unit
 field_energy     → Love(0)          +0.02/unit,  Self(4)       +0.02/unit
 ```
@@ -72,7 +72,6 @@ Handled by `observer_bridge.py` (`UnifiedObserverBridge.fetch_relational_correct
 coherence_score   → Transparency(10) +0.030/unit, Integrity(8)   +0.025/unit
 symmetry_score    → Faith(3)         +0.025/unit, Love(0)        +0.020/unit
 observer_strength → Self(4)          +0.030/unit
-memory_depth      → Learning(12)     +0.025/unit, Resilience(9)  +0.020/unit
 biological_health → Resilience(9)    +0.030/unit
 ```
 
@@ -111,7 +110,7 @@ Modified files:
 
 | File | Repo | Changes |
 |---|---|---|
-| `sovereign_manifold.py` | sovereign_manifold | Phase 0 (upstream fetch), bridge init |
+| `sovereign_manifold.py` | sovereign_manifold | Phase 0 (upstream fetch), bridge init, Lantern hydration |
 | `ProjectSynapse_v2.java` | projectsynapse | HTTP server on :8001, /rfe-state + /health handlers |
 
 ## Startup Sequence

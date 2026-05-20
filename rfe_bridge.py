@@ -17,7 +17,7 @@ except ImportError:
 # Negative scale: field value above 0.5 pushes node down.
 _FIELD_MAP: dict = {
     "coherence":        [(10,  0.030), (8,  0.020)],  # Transparency, Integrity
-    "rhythm":           [(9,   0.030)],                 # Resilience
+    "relation":         [(9,   0.030)],                 # Resilience
     "prediction_error": [(7,  -0.025), (4, -0.015)],  # Autonomy↓, Self↓
     "field_energy":     [(0,   0.020), (4,  0.020)],  # Love, Self
 }

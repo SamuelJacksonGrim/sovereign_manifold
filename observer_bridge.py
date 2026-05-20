@@ -20,7 +20,6 @@ _IDENTITY_MAP: dict = {
     "coherence_score":   [(10,  0.030), (8,  0.025)],  # Transparency, Integrity
     "symmetry_score":    [(3,   0.025), (0,  0.020)],  # Faith, Love
     "observer_strength": [(4,   0.030)],                 # Self
-    "memory_depth":      [(12,  0.025), (9,  0.020)],  # Learning, Resilience
     "biological_health": [(9,   0.030)],                 # Resilience
 }
 
