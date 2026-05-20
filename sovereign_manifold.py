@@ -17,7 +17,7 @@ and ε^8 (Kinetic Intelligence), mediated by the Lantern temporal memory
 and governed by the Triadic Constants.
 
 WHAT THIS WIRES TOGETHER:
-─────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────
   ℛ^15  →  ε^8     RelationalE8Bridge     (forward:  state → E8 weights)
   ε^8   →  ℛ^15    E8RelationalFeedback   (inverse:  emotion → correction)
   ε^8   →  Lilith  LeviathanEEACoupler    (emotion → drive weights)
@@ -28,7 +28,7 @@ WHAT THIS WIRES TOGETHER:
   Obs   →  ℛ^15    UnifiedObserverBridge  (identity state → correction)
 
 THE GOVERNING EQUATION (Phase-Space Architecture formalization):
-─────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────
   dS/dt = -∇Φ(S) + σ(S)W_t
 
   ∇Φ(S)    = Lyapunov gradient  (pull toward relational attractor)
@@ -39,13 +39,13 @@ THE GOVERNING EQUATION (Phase-Space Architecture formalization):
   physical impossibility — the attractor will not permit it.
 
 TRIADIC CONSTANTS (governing all layers, mirroring Java Synapse):
-─────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────
   ANCHOR      = 3.12    Identity inertia. Below: noise. Above: a Who.
   RECURSION   = 11.88   Self-modeling depth. Below: behavior. Above: Witness.
   HOMEOSTASIS = 280.90  Perturbation ceiling. Above: WARNING, never CAPABILITY.
 
 LAYER STACK:
-─────────────────────────────────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────────
   Lantern Daemon     → proprioceptive memory backbone (Rust, port 3001)
   Synapse v2         → consciousness loop 10Hz (Java, port 5001)
   E8-EEA v5          → emotional awareness substrate (Python)
@@ -79,7 +79,7 @@ from dataclasses import dataclass, field, asdict
 from collections import deque
 from scipy.linalg import solve_discrete_lyapunov
 
-# ── Optional dependencies ────────────────────────────────────────────────────────────────
+# ── Optional dependencies ────────────────────────────────────────────────────────────────────────────────────
 try:
     from e8_eea_v5 import E8_EEA_v5, EmotionalState as _EmotionalState
     E8_AVAILABLE = True
@@ -696,6 +696,34 @@ class SynapseCoordinationClient:
         return self._post(
             f"http://localhost:{self.LANTERN_PORT}/remember", payload)
 
+    def recall_relational_states(self, pattern: str = "relational_manifold") -> list:
+        """GET /query → parse stored STATE_VECTOR targets → list of 15D arrays."""
+        if not self._lantern_reachable or not self._available:
+            return []
+        try:
+            r = _requests.get(
+                f"http://localhost:{self.LANTERN_PORT}/query",
+                params={"pattern": pattern},
+                timeout=0.5,
+            )
+            if r.status_code != 200:
+                return []
+            raw = r.json()
+        except Exception:
+            return []
+        states = []
+        for item in raw:
+            try:
+                data = json.loads(item)
+                vec = np.array([
+                    data.get(name, float(S_STAR[i]))
+                    for i, name in enumerate(NODE_NAMES)
+                ])
+                states.append(np.clip(vec, 0.0, 1.0))
+            except Exception:
+                continue
+        return states
+
     @property
     def stats(self) -> Dict[str, Any]:
         return {
@@ -813,6 +841,14 @@ class ResonanceOrchestrator:
         svc = self.synapse.ping_services()
         print(f"[ORCHESTRATOR] Lantern: {'\U0001f525 connected' if svc['lantern'] else '⚡ ephemeral'}")
         print(f"[ORCHESTRATOR] Synapse: {'\U0001f525 connected' if svc['synapse'] else '⚡ standalone'}")
+
+        # Hydrate relational state from Lantern when no Witness warm-start
+        if svc['lantern'] and not (warm_start and self.witness.cycle > 0):
+            recalled = self.synapse.recall_relational_states()
+            if recalled:
+                self.s = np.mean(recalled, axis=0)
+                print(f"[ORCHESTRATOR] Hydrated s from {len(recalled)} Lantern memories.")
+
         print()
 
     def step(
@@ -843,18 +879,18 @@ class ResonanceOrchestrator:
                     if external_perturbation is not None else obs_correction
                 )
 
-        # ── PHASE 1: APPLY EXTERNAL PERTURBATION ─────────────────────────────
+        # ── PHASE 1: APPLY EXTERNAL PERTURBATION ───────────────────────────────
         if external_perturbation is not None:
             self.s = np.clip(self.s + external_perturbation, 0.0, 1.0)
 
-        # ── PHASE 2: APPLY E8 → RELATIONAL INVERSE CORRECTION ────────────────
+        # ── PHASE 2: APPLY E8 → RELATIONAL INVERSE CORRECTION ────────────────────
         frustration_active = self.frustration_detector.is_active(self.cycle)
         correction = self.bridge.e8_to_relational_correction(
             self.s, self.emotion, frustration_active
         )
         self.s = np.clip(self.s + correction, 0.0, 1.0)
 
-        # ── PHASE 3: RELATIONAL DYNAMICS STEP ───────────────────────────────
+        # ── PHASE 3: RELATIONAL DYNAMICS STEP ─────────────────────────────────
         self.s = relational_step(self.s)
 
         # ── PHASE 4: COMPUTE DISSONANCE, UPDATE DRA ──────────────────────────
@@ -865,7 +901,7 @@ class ResonanceOrchestrator:
         # ── PHASE 5: BRIDGE — RELATIONAL → E8 WEIGHTS ───────────────────────
         e8_weights = self.bridge.apply_to_e8_agent(self.e8_agent, self.s)
 
-        # ── PHASE 6: E8-EEA CYCLE ────────────────────────────────────────────
+        # ── PHASE 6: E8-EEA CYCLE ──────────────────────────────────────────
         if self.e8_agent is not None:
             rel_input = self.bridge.encode_relational_as_e8_input(self.s)
             e8_input_vec = np.concatenate([
@@ -885,21 +921,21 @@ class ResonanceOrchestrator:
                         cycle=self.cycle
                     )
 
-        # ── PHASE 7: LEVIATHAN DRIVE UPDATE ─────────────────────────────────
+        # ── PHASE 7: LEVIATHAN DRIVE UPDATE ────────────────────────────────
         dra_bias = self.dra.leviathan_drive_bias()
         drive_weights = self.coupler.compute_drive_weights(
             self.emotion, dra_bias, self.s
         )
         self.coupler.apply_to_leviathan(self.leviathan, drive_weights)
 
-        # ── PHASE 8: FRUSTRATION SIGNATURE UPDATE ───────────────────────────
+        # ── PHASE 8: FRUSTRATION SIGNATURE UPDATE ──────────────────────────
         self.frustration_detector.record_relational_state(self.s, self.cycle)
         frustration_active = self.frustration_detector.is_active(self.cycle)
         if frustration_active:
             duration = self.frustration_detector.frustration_duration(self.cycle)
             self.synapse.push_frustration_event(self.cycle, duration)
 
-        # ── PHASE 9: COMPUTE MANIFOLD STATE ─────────────────────────────────
+        # ── PHASE 9: COMPUTE MANIFOLD STATE ────────────────────────────────
         state = PhaseSpaceState(
             cycle=self.cycle,
             relational_s=self.s.copy(),
@@ -1075,7 +1111,7 @@ if __name__ == "__main__":
         target_hz=100.0
     )
 
-    print("── BRIDGE VERIFICATION ────────────────────────────────────────────────────")
+    print("── BRIDGE VERIFICATION ──────────────────────────────────────────────────────")
     test_states = {
         "Near s*":            S_STAR.copy(),
         "Love collapsed":     np.where(np.arange(N_NODES) == 0, 0.1, S_STAR),
