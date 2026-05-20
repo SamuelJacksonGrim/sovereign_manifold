@@ -53,16 +53,55 @@ Defined identically in:
 
 ### rfe-core2 StepResponse → Relational Perturbation
 
-Handled by `rfe_bridge.py` (`RFECore2Bridge.fetch_perturbation`):
+Handled by `rfe_bridge.py` (`RFECore2Bridge.fetch_perturbation`).
+
+**Float fields** — normalized to [0, 1], centered at 0.5, then scaled:
 
 ```
-coherence        → Transparency(10) +0.03/unit,  Integrity(8)  +0.02/unit
-relation         → Resilience(9)    +0.03/unit
-prediction_error → Autonomy(7)      −0.025/unit, Self(4)       −0.015/unit
-field_energy     → Love(0)          +0.02/unit,  Self(4)       +0.02/unit
+coherence        → Transparency(10) +0.030/unit, Integrity(8)  +0.025/unit
+                   [Watcher composite; range [0,1]; high = internally consistent]
+
+relation         → Self(4) +0.025/unit, Integrity(8) +0.020/unit, Autonomy(7) +0.015/unit
+                   [Witness composite; range [-1,1] mapped to [0,1];
+                    high = strong identity continuity across timescales]
+
+prediction_error → Autonomy(7) −0.025/unit, Self(4) −0.015/unit
+                   [L2 distance predicted→actual; normalized /2.0;
+                    high = system surprised itself]
+
+field_energy     → Love(0) +0.020/unit, Resilience(9) +0.020/unit
+                   [L2 norm of resonance field; normalized /5.0;
+                    high = cognitive vitality, aliveness]
+
+crystals (int)   → Accountability(11) +0.012/unit
+                   [count normalized /10; memory consolidation]
+
+attractors (int) → Accountability(11) +0.008/unit, Adaptability(13) +0.008/unit
+                   [count normalized /10; richer cognitive landscape]
 ```
 
-All perturbations centered at 0.5, capped at ±0.05 per node.
+**Categorical fields** — direct delta lookup, no normalization:
+
+```
+rhythm "stabilize"  → Boundaries(6) +0.015, Resilience(9) +0.010, Learning(12) −0.008
+rhythm "dream"      → Faith(3) +0.015, Accountability(11) −0.010, Transparency(10) −0.008
+rhythm "reflect"    → Transparency(10) +0.018, Self(4) +0.015, Integrity(8) +0.010
+rhythm "explore"    → Autonomy(7) +0.018, Adaptability(13) +0.018, Learning(12) +0.012
+
+pattern "identity_reinforcement" → Self(4) +0.018, Integrity(8) +0.015, Loyalty(1) +0.008
+pattern "transient_thought"       → (no perturbation)
+pattern "archetypal_recurrence"   → Faith(3) +0.018, Loyalty(1) +0.015, Integrity(8) +0.010
+pattern "novelty_intrusion"       → Learning(12) +0.022, Adaptability(13) +0.018, Autonomy(7) +0.010
+
+emotion "joy"       → Love(0) +0.020, Trust(5) +0.015, Resilience(9) +0.010
+emotion "wonder"    → Learning(12) +0.020, Adaptability(13) +0.015, Transparency(10) +0.012
+emotion "curiosity" → Learning(12) +0.018, Adaptability(13) +0.012, Autonomy(7) +0.010
+emotion "stability" → Accountability(11) +0.018, Integrity(8) +0.015, Resilience(9) +0.010
+emotion "tension"   → Autonomy(7) −0.018, Boundaries(6) −0.012, Trust(5) −0.010
+emotion "boredom"   → Learning(12) −0.015, Adaptability(13) −0.010, Autonomy(7) −0.008
+```
+
+All perturbations capped at ±0.05 per node.
 
 ### unified-observer IdentityState → Relational Correction
 
@@ -70,14 +109,24 @@ Handled by `observer_bridge.py` (`UnifiedObserverBridge.fetch_relational_correct
 
 ```
 coherence_score   → Transparency(10) +0.030/unit, Integrity(8)   +0.025/unit
-symmetry_score    → Faith(3)         +0.025/unit, Love(0)        +0.020/unit
-observer_strength → Self(4)          +0.030/unit
-biological_health → Resilience(9)    +0.030/unit
+                    [multi-source coherence: Resting/Circuit/Temporal average]
+
+symmetry_score    → Integrity(8) +0.025/unit, Self(4) +0.020/unit
+                    [structural bilateral balance — NOT emotional;
+                     maps to structural wholeness and identity anchor]
+
+observer_strength → Self(4) +0.030/unit, Trust(5) +0.015/unit
+                    [multiplicative: coherence × symmetry × bio_health;
+                     strong observer enables trusting one's own perception]
+
+biological_health → Resilience(9) +0.030/unit, Love(0) +0.015/unit
+                    [vitality (currently static placeholder at 1.0);
+                     physical health supports resilience and relational warmth]
 ```
 
-**Note**: The observer endpoint is assumed to be `GET /identity`. Adjust
-`UnifiedObserverBridge.__init__(endpoint=...)` if the actual unified-observer
-API uses a different path.
+**Note on memory_depth**: `IdentityState.memory_depth` is an `int` count of stored
+memories. It is not a [0, 1] float and cannot be mapped through the centering formula.
+It is intentionally absent from `_IDENTITY_MAP`.
 
 ### sovereign_manifold → Lantern (existing)
 
@@ -141,12 +190,6 @@ cd ../projectsynapse && javac ProjectSynapse_v2.java && java ProjectSynapse_v2
 # Terminal 5:
 python sovereign_manifold.py
 ```
-
-## Repos Needing Dockerfiles
-
-- **rfe-core2**: needs `Dockerfile` — FastAPI, so: `FROM python:3.11-slim`, install deps, `uvicorn main:app --host 0.0.0.0 --port 8000`
-- **unified-observer-architecture**: already has `docker-compose.yml`, check for `Dockerfile`
-- **projectsynapse**: `Dockerfile` added in this integration pass
 
 ## Timing Budget (10Hz = 100ms/cycle)
 
