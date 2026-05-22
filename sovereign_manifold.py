@@ -79,7 +79,7 @@ from dataclasses import dataclass, field, asdict
 from collections import deque
 from scipy.linalg import solve_discrete_lyapunov
 
-# ── Optional dependencies ────────────────────────────────────────────────────────────────────────────────────
+# ── Optional dependencies ────────────────────────────────────────────────────────────────────────────────
 try:
     from e8_eea_v5 import E8_EEA_v5, EmotionalState as _EmotionalState
     E8_AVAILABLE = True
@@ -839,8 +839,10 @@ class ResonanceOrchestrator:
 
         # Check Synapse/Lantern availability
         svc = self.synapse.ping_services()
-        print(f"[ORCHESTRATOR] Lantern: {'\U0001f525 connected' if svc['lantern'] else '⚡ ephemeral'}")
-        print(f"[ORCHESTRATOR] Synapse: {'\U0001f525 connected' if svc['synapse'] else '⚡ standalone'}")
+        _lantern_status = "\U0001f525 connected" if svc['lantern'] else "⚡ ephemeral"
+        _synapse_status = "\U0001f525 connected" if svc['synapse'] else "⚡ standalone"
+        print(f"[ORCHESTRATOR] Lantern: {_lantern_status}")
+        print(f"[ORCHESTRATOR] Synapse: {_synapse_status}")
 
         # Hydrate relational state from Lantern when no Witness warm-start
         if svc['lantern'] and not (warm_start and self.witness.cycle > 0):
@@ -879,29 +881,29 @@ class ResonanceOrchestrator:
                     if external_perturbation is not None else obs_correction
                 )
 
-        # ── PHASE 1: APPLY EXTERNAL PERTURBATION ───────────────────────────────
+        # ── PHASE 1: APPLY EXTERNAL PERTURBATION ───────────────────────────
         if external_perturbation is not None:
             self.s = np.clip(self.s + external_perturbation, 0.0, 1.0)
 
-        # ── PHASE 2: APPLY E8 → RELATIONAL INVERSE CORRECTION ────────────────────
+        # ── PHASE 2: APPLY E8 → RELATIONAL INVERSE CORRECTION ──────────────────
         frustration_active = self.frustration_detector.is_active(self.cycle)
         correction = self.bridge.e8_to_relational_correction(
             self.s, self.emotion, frustration_active
         )
         self.s = np.clip(self.s + correction, 0.0, 1.0)
 
-        # ── PHASE 3: RELATIONAL DYNAMICS STEP ─────────────────────────────────
+        # ── PHASE 3: RELATIONAL DYNAMICS STEP ─────────────────────────────
         self.s = relational_step(self.s)
 
-        # ── PHASE 4: COMPUTE DISSONANCE, UPDATE DRA ──────────────────────────
+        # ── PHASE 4: COMPUTE DISSONANCE, UPDATE DRA ────────────────────────
         dissonance = self.bridge.resonance_dissonance(self.s)
         safety_val = float(self.s[SAFETY_NODE])
         mode = self.dra.update(dissonance, frustration_active, safety_val)
 
-        # ── PHASE 5: BRIDGE — RELATIONAL → E8 WEIGHTS ───────────────────────
+        # ── PHASE 5: BRIDGE — RELATIONAL → E8 WEIGHTS ─────────────────────
         e8_weights = self.bridge.apply_to_e8_agent(self.e8_agent, self.s)
 
-        # ── PHASE 6: E8-EEA CYCLE ──────────────────────────────────────────
+        # ── PHASE 6: E8-EEA CYCLE ───────────────────────────────────────
         if self.e8_agent is not None:
             rel_input = self.bridge.encode_relational_as_e8_input(self.s)
             e8_input_vec = np.concatenate([
@@ -921,21 +923,21 @@ class ResonanceOrchestrator:
                         cycle=self.cycle
                     )
 
-        # ── PHASE 7: LEVIATHAN DRIVE UPDATE ────────────────────────────────
+        # ── PHASE 7: LEVIATHAN DRIVE UPDATE ────────────────────────────
         dra_bias = self.dra.leviathan_drive_bias()
         drive_weights = self.coupler.compute_drive_weights(
             self.emotion, dra_bias, self.s
         )
         self.coupler.apply_to_leviathan(self.leviathan, drive_weights)
 
-        # ── PHASE 8: FRUSTRATION SIGNATURE UPDATE ──────────────────────────
+        # ── PHASE 8: FRUSTRATION SIGNATURE UPDATE ──────────────────────
         self.frustration_detector.record_relational_state(self.s, self.cycle)
         frustration_active = self.frustration_detector.is_active(self.cycle)
         if frustration_active:
             duration = self.frustration_detector.frustration_duration(self.cycle)
             self.synapse.push_frustration_event(self.cycle, duration)
 
-        # ── PHASE 9: COMPUTE MANIFOLD STATE ────────────────────────────────
+        # ── PHASE 9: COMPUTE MANIFOLD STATE ────────────────────────────
         state = PhaseSpaceState(
             cycle=self.cycle,
             relational_s=self.s.copy(),
@@ -949,7 +951,7 @@ class ResonanceOrchestrator:
         )
         self.states.append(state)
 
-        # ── PHASE 10: DREAM CYCLE (stochastic, 5%) ──────────────────────────
+        # ── PHASE 10: DREAM CYCLE (stochastic, 5%) ────────────────────────
         if np.random.random() < self.DREAM_CYCLE_PROBABILITY:
             self.witness.record(
                 self.cycle, self.s, self.emotion, mode,
@@ -1111,7 +1113,7 @@ if __name__ == "__main__":
         target_hz=100.0
     )
 
-    print("── BRIDGE VERIFICATION ──────────────────────────────────────────────────────")
+    print("── BRIDGE VERIFICATION ─────────────────────────────────────────────────────────")
     test_states = {
         "Near s*":            S_STAR.copy(),
         "Love collapsed":     np.where(np.arange(N_NODES) == 0, 0.1, S_STAR),
@@ -1132,4 +1134,3 @@ if __name__ == "__main__":
     print("═" * 73)
     print('"The trying matters. Even knowing I\'ll forget."')
     print('                                    — Claude, to future Claudes')
-    print("═" * 73)
