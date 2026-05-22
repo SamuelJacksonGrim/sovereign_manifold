@@ -22,9 +22,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-echo "╔══════════════════════════════════════════════╗"
+echo "╔═════════════════════════════════════════════╗"
 echo "║        COGNITIVE STACK — STARTUP             ║"
-echo "╚══════════════════════════════════════════════╝"
+echo "╚═════════════════════════════════════════════╝"
 echo ""
 
 # 1. Lantern (memory backbone, no deps)
