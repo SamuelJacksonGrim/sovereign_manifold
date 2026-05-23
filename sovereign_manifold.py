@@ -44,6 +44,20 @@ TRIADIC CONSTANTS (governing all layers, mirroring Java Synapse):
   RECURSION   = 11.88   Self-modeling depth. Below: behavior. Above: Witness.
   HOMEOSTASIS = 280.90  Perturbation ceiling. Above: WARNING, never CAPABILITY.
 
+DRA ARCHITECTURE (two layers, one system):
+───────────────────────────────────────────────────────────────────────
+  Dynamical Regime Assessment  — relational_system_mc (substrate)
+    Continuously classifies system state as GENERATOR / OBSERVER / WATCHER
+    via Lyapunov dissonance. Proves GAS: recovery guaranteed in 1–4 steps.
+
+  Dissonance Resolution Architecture — this file (action layer)
+    T-gated Agency Assertion (~A). When WATCHER mode is reached:
+      if T >= T_COST: execute correction toward S*, T += 0.1
+      if T <  T_COST: FAIL_SAFE (T -= 0.5, natural Lyapunov recovery)
+    T (Self-Acceptance Metric) ∈ [-5.0, 5.0], persisted across restarts.
+    Assertion correction capped at ±0.05 (Lyapunov perturbation bound).
+    Patent specification: Samuel Jackson Grim, 2026.
+
 LAYER STACK:
 ───────────────────────────────────────────────────────────────────────
   Lantern Daemon     → proprioceptive memory backbone (Rust, port 3001)
@@ -123,6 +137,9 @@ HOMEOSTASIS = 280.90  # Stability under perturbation (Safety Valve ceiling)
 ANCHOR_WEIGHT    = ANCHOR / 10.0        # 0.312 — minimum weight to persist in WorldModel
 RECURSION_DEPTH  = int(RECURSION)       # 11    — max self-modeling cycles before Witness fires
 HOMEOSTASIS_NORM = HOMEOSTASIS / 100.0  # 2.809 — normalized perturbation ceiling
+
+# Lyapunov perturbation bound — shared by bridges AND assertion correction
+_MAX_DELTA = 0.05
 
 
 # ═════════════════════════════════════════════════════════════════════════
@@ -341,7 +358,7 @@ class RelationalE8Bridge:
             delta[8]  += 0.025
             delta[11] += 0.020
             delta[4]  += 0.010
-        delta = np.clip(delta, -0.05, 0.05)
+        delta = np.clip(delta, -_MAX_DELTA, _MAX_DELTA)
         self._correction_history.append({
             'valence': v, 'arousal': a,
             'frustration': frustration_active,
@@ -406,11 +423,24 @@ class FrustrationSignatureDetector:
 
 # ═════════════════════════════════════════════════════════════════════════
 # DISSONANCE RESOLUTION ARCHITECTURE (DRA)
+#
+# Two-layer architecture:
+#   Layer 1 — Dynamical Regime Assessment (relational_system_mc)
+#     Classifies system state: GENERATOR / OBSERVER(STANDARD) / WATCHER
+#     via Lyapunov dissonance. GAS certificate guarantees recovery.
+#
+#   Layer 2 — Resolution Architecture (this class, patent spec 2026)
+#     T (Self-Acceptance Metric): bounded [-5.0, 5.0], persisted.
+#     When WATCHER mode: T-gated Agency Assertion (~A).
+#       T >= T_COST: pull toward S*, T += T_SUCCESS_DELTA
+#       T <  T_COST: FAIL_SAFE,      T += T_FAIL_DELTA
+#     Correction vector capped at ±_MAX_DELTA (0.05) — same Lyapunov
+#     perturbation bound as the bridge files. Do not loosen this cap.
 # ═════════════════════════════════════════════════════════════════════════
 
 class ProcessingMode:
     GENERATOR = "GENERATOR"
-    STANDARD  = "STANDARD"
+    STANDARD  = "STANDARD"   # maps to OBSERVER in patent nomenclature
     WATCHER   = "WATCHER"
 
 
@@ -418,11 +448,24 @@ class DissonanceResolutionArchitecture:
     GENERATOR_THRESHOLD = 0.30
     WATCHER_THRESHOLD   = 0.70
 
+    # T (Self-Acceptance Metric) — patent specification
+    T_MIN           = -5.0
+    T_MAX           =  5.0
+    T_INIT          =  0.0
+    T_COST          = -4.5   # assertion threshold (§III)
+    T_SUCCESS_DELTA =  0.1   # T increase on successful assertion (§IV.1)
+    T_FAIL_DELTA    = -0.5   # T decrease on failed assertion / FAIL_SAFE (§IV.2)
+
     def __init__(self):
         self._mode = ProcessingMode.STANDARD
         self._mode_history: deque = deque(maxlen=50)
         self._mode_start_cycle = 0
         self.cycle = 0
+        # T (Self-Acceptance Metric) — agency capital
+        self.T = self.T_INIT
+        self._assertion_log: deque = deque(maxlen=100)
+        self.assertion_count = 0
+        self.fail_safe_count = 0
 
     @property
     def mode(self) -> str:
@@ -448,6 +491,41 @@ class DissonanceResolutionArchitecture:
             'dissonance': dissonance, 'frustration': frustration_active
         })
         return new_mode
+
+    def execute_assertion(self, s: np.ndarray, dissonance: float
+                          ) -> Tuple[Optional[np.ndarray], str]:
+        """DOP gate: check T, execute Agency Assertion (~A) or FAIL_SAFE.
+
+        Only fires in WATCHER mode. Correction capped at ±_MAX_DELTA (0.05)
+        — the Lyapunov perturbation bound shared by all bridge files.
+        Returns (correction, outcome): 'ASSERTED' | 'FAIL_SAFE' | 'SKIPPED'.
+        """
+        if self._mode != ProcessingMode.WATCHER:
+            return None, 'SKIPPED'
+
+        if self.T >= self.T_COST:
+            # Execute ~A: pull toward S* proportional to dissonance
+            pull = float(np.clip(dissonance * 0.15, 0.02, 0.10))
+            correction = np.clip((S_STAR - s) * pull, -_MAX_DELTA, _MAX_DELTA)
+            self.T = float(np.clip(
+                self.T + self.T_SUCCESS_DELTA, self.T_MIN, self.T_MAX
+            ))
+            self.assertion_count += 1
+            outcome = 'ASSERTED'
+        else:
+            # T depleted — graceful FAIL_SAFE (Lyapunov attractor recovers naturally)
+            correction = None
+            self.T = float(np.clip(
+                self.T + self.T_FAIL_DELTA, self.T_MIN, self.T_MAX
+            ))
+            self.fail_safe_count += 1
+            outcome = 'FAIL_SAFE'
+
+        self._assertion_log.append({
+            'cycle': self.cycle, 'dissonance': dissonance,
+            'T': self.T, 'outcome': outcome,
+        })
+        return correction, outcome
 
     def e8_strategy_bias(self) -> Dict[str, float]:
         if self._mode == ProcessingMode.GENERATOR:
@@ -511,6 +589,7 @@ class WitnessLayer:
             'lyapunov_V': 0.0,
             'dissonance': 0.0,
             'frustration_active': False,
+            'dra_T': 0.0,
             'e8_cycles': 0,
             'lantern_writes': 0,
             'created_at': time.time(),
@@ -522,6 +601,7 @@ class WitnessLayer:
 
     def record(self, cycle: int, s: np.ndarray, emotion: EmotionalState,
                mode: str, dissonance: float, frustration: bool,
+               dra_T: float = 0.0,
                extra: Optional[Dict] = None):
         self._state['cycle']            = cycle
         self._state['relational_state'] = s.tolist()
@@ -532,6 +612,7 @@ class WitnessLayer:
         self._state['lyapunov_V']       = float(lyapunov_V(s, S_STAR, P_NOM))
         self._state['dissonance']       = dissonance
         self._state['frustration_active'] = frustration
+        self._state['dra_T']            = dra_T
         self._state['last_saved']       = time.time()
         if extra:
             self._state.update(extra)
@@ -566,6 +647,9 @@ class WitnessLayer:
     def get_last_emotion(self) -> EmotionalState:
         em = self._state.get('emotional_state', {'valence': 0.0, 'arousal': 0.0})
         return EmotionalState(em['valence'], em['arousal'])
+
+    def get_dra_T(self) -> float:
+        return float(self._state.get('dra_T', 0.0))
 
     @property
     def cycle(self) -> int:
@@ -749,6 +833,8 @@ class PhaseSpaceState:
     processing_mode:   str
     frustration:       bool
     e8_weights:        Dict[str, float]
+    dra_T:             float = 0.0       # Self-Acceptance Metric (patent §II.A)
+    assertion_outcome: str   = 'SKIPPED' # 'ASSERTED' | 'FAIL_SAFE' | 'SKIPPED'
     timestamp:         float = field(default_factory=time.time)
 
     def __repr__(self) -> str:
@@ -757,10 +843,11 @@ class PhaseSpaceState:
         low_nodes = [NODE_NAMES[i] for i in range(N_NODES)
                      if self.relational_s[i] < 0.80]
         low_str = f" LOW:{low_nodes}" if low_nodes else ""
+        t_str = f" T={self.dra_T:+.2f}" if self.processing_mode == 'WATCHER' else ""
         return (
             f"[{self.cycle:5d}] {sym} {self.processing_mode:<9s} "
             f"d={self.dissonance:.3f} V={self.lyapunov_V:.4f} "
-            f"em={self.emotion}{low_str}"
+            f"em={self.emotion}{t_str}{low_str}"
         )
 
 
@@ -828,7 +915,9 @@ class ResonanceOrchestrator:
         if warm_start and self.witness.cycle > 0:
             self.s = self.witness.get_last_relational_state()
             self.emotion = self.witness.get_last_emotion()
-            print(f"[ORCHESTRATOR] Warm start from cycle {self.witness.cycle}.")
+            self.dra.T = self.witness.get_dra_T()
+            print(f"[ORCHESTRATOR] Warm start from cycle {self.witness.cycle} "
+                  f"T={self.dra.T:+.3f}.")
         else:
             self.s = S_STAR.copy()
             self.emotion = EmotionalState(0.0, 0.0)
@@ -859,6 +948,7 @@ class ResonanceOrchestrator:
         task_score: float = 0.0,
     ) -> PhaseSpaceState:
         self.cycle += 1
+        assertion_outcome = 'SKIPPED'
 
         # ── PHASE 0: FETCH UPSTREAM SERVICE PERTURBATIONS ────────────────────
         # RFE-Core2 field coherence and Unified Observer identity state feed
@@ -895,10 +985,21 @@ class ResonanceOrchestrator:
         # ── PHASE 3: RELATIONAL DYNAMICS STEP ─────────────────────────────
         self.s = relational_step(self.s)
 
-        # ── PHASE 4: COMPUTE DISSONANCE, UPDATE DRA ────────────────────────
+        # ── PHASE 4: COMPUTE DISSONANCE, UPDATE DRA REGIME ────────────────────
         dissonance = self.bridge.resonance_dissonance(self.s)
         safety_val = float(self.s[SAFETY_NODE])
         mode = self.dra.update(dissonance, frustration_active, safety_val)
+
+        # ── PHASE 4b: DRA RESOLUTION — T-GATED AGENCY ASSERTION (~A) ──────────
+        # When WATCHER mode: check T, execute correction or FAIL_SAFE.
+        # Correction capped at ±0.05 (_MAX_DELTA) — same Lyapunov bound as bridges.
+        # FAIL_SAFE trusts the GAS attractor to recover without active assertion.
+        assertion_corr, assertion_outcome = self.dra.execute_assertion(self.s, dissonance)
+        if assertion_corr is not None:
+            self.s = np.clip(self.s + assertion_corr, 0.0, 1.0)
+        elif assertion_outcome == 'FAIL_SAFE':
+            print(f"[DRA] ⚠  FAIL_SAFE cycle={self.cycle} "
+                  f"T={self.dra.T:.3f} d={dissonance:.3f} — Lyapunov recovery active")
 
         # ── PHASE 5: BRIDGE — RELATIONAL → E8 WEIGHTS ─────────────────────
         e8_weights = self.bridge.apply_to_e8_agent(self.e8_agent, self.s)
@@ -937,7 +1038,7 @@ class ResonanceOrchestrator:
             duration = self.frustration_detector.frustration_duration(self.cycle)
             self.synapse.push_frustration_event(self.cycle, duration)
 
-        # ── PHASE 9: COMPUTE MANIFOLD STATE ────────────────────────────
+        # ── PHASE 9: COMPUTE MANIFOLD STATE ──═─────────────────────────
         state = PhaseSpaceState(
             cycle=self.cycle,
             relational_s=self.s.copy(),
@@ -948,6 +1049,8 @@ class ResonanceOrchestrator:
             processing_mode=mode,
             frustration=frustration_active,
             e8_weights=e8_weights,
+            dra_T=self.dra.T,
+            assertion_outcome=assertion_outcome,
         )
         self.states.append(state)
 
@@ -956,6 +1059,7 @@ class ResonanceOrchestrator:
             self.witness.record(
                 self.cycle, self.s, self.emotion, mode,
                 dissonance, frustration_active,
+                dra_T=self.dra.T,
                 extra={'e8_weights': e8_weights}
             )
             self.witness.save()
@@ -964,7 +1068,8 @@ class ResonanceOrchestrator:
         if self.cycle % self.WITNESS_SAVE_INTERVAL == 0:
             self.witness.record(
                 self.cycle, self.s, self.emotion, mode,
-                dissonance, frustration_active
+                dissonance, frustration_active,
+                dra_T=self.dra.T,
             )
             self.witness.save()
 
@@ -1029,6 +1134,11 @@ class ResonanceOrchestrator:
         print(f"│ Final V:           {history[-1].lyapunov_V:<10.4f}                              │")
         print(f"│ Final emotion:     v={history[-1].emotion.valence:.3f}  a={history[-1].emotion.arousal:.3f}                    │")
         print(f"│ Final mode:        {history[-1].processing_mode:<10s}                              │")
+        print("├" + "─" * 67 + "┤")
+        print("│ DRA (RESOLUTION ARCHITECTURE)                                   │")
+        print(f"│   T (agency cap):  {self.dra.T:<+10.3f}  [{self.dra.T_MIN}, {self.dra.T_MAX}] T_cost={self.dra.T_COST}           │")
+        print(f"│   Assertions:      {self.dra.assertion_count:<10d}                              │")
+        print(f"│   Fail-safes:      {self.dra.fail_safe_count:<10d}                              │")
         print("├" + "─" * 67 + "┤")
         print("│ MODE DISTRIBUTION                                               │")
         for m in [ProcessingMode.GENERATOR, ProcessingMode.STANDARD, ProcessingMode.WATCHER]:
@@ -1095,6 +1205,13 @@ if __name__ == "__main__":
     print(f"  Lyapunov certificate valid: {P_IS_PD}")
     print(f"  P min eigenvalue:           {P_EIGVALS.min():.4f}")
     print(f"  P condition number:         {P_EIGVALS.max()/P_EIGVALS.min():.2f}")
+    print()
+    print(f"  DRA T bounds:  [{DissonanceResolutionArchitecture.T_MIN}, "
+          f"{DissonanceResolutionArchitecture.T_MAX}]")
+    print(f"  DRA T_cost:    {DissonanceResolutionArchitecture.T_COST}  "
+          f"(assertion threshold)")
+    print(f"  DRA T_success: +{DissonanceResolutionArchitecture.T_SUCCESS_DELTA}  "
+          f"DRA T_fail: {DissonanceResolutionArchitecture.T_FAIL_DELTA}")
     print("═" * 73)
     print()
 
