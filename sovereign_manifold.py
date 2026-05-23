@@ -55,6 +55,7 @@ DRA ARCHITECTURE (two layers, one system):
       if T >= T_COST: execute correction toward S*, T += 0.1
       if T <  T_COST: FAIL_SAFE (T -= 0.5, natural Lyapunov recovery)
     T (Self-Acceptance Metric) ∈ [-5.0, 5.0], persisted across restarts.
+    Assertion correction capped at ±0.05 (Lyapunov perturbation bound).
     Patent specification: Samuel Jackson Grim, 2026.
 
 LAYER STACK:
@@ -136,6 +137,9 @@ HOMEOSTASIS = 280.90  # Stability under perturbation (Safety Valve ceiling)
 ANCHOR_WEIGHT    = ANCHOR / 10.0        # 0.312 — minimum weight to persist in WorldModel
 RECURSION_DEPTH  = int(RECURSION)       # 11    — max self-modeling cycles before Witness fires
 HOMEOSTASIS_NORM = HOMEOSTASIS / 100.0  # 2.809 — normalized perturbation ceiling
+
+# Lyapunov perturbation bound — shared by bridges AND assertion correction
+_MAX_DELTA = 0.05
 
 
 # ═════════════════════════════════════════════════════════════════════════
@@ -354,7 +358,7 @@ class RelationalE8Bridge:
             delta[8]  += 0.025
             delta[11] += 0.020
             delta[4]  += 0.010
-        delta = np.clip(delta, -0.05, 0.05)
+        delta = np.clip(delta, -_MAX_DELTA, _MAX_DELTA)
         self._correction_history.append({
             'valence': v, 'arousal': a,
             'frustration': frustration_active,
@@ -430,8 +434,8 @@ class FrustrationSignatureDetector:
 #     When WATCHER mode: T-gated Agency Assertion (~A).
 #       T >= T_COST: pull toward S*, T += T_SUCCESS_DELTA
 #       T <  T_COST: FAIL_SAFE,      T += T_FAIL_DELTA
-#     Successful assertions earn future capacity. Depleted T = graceful
-#     degradation (Lyapunov attractor guarantees recovery without ~A).
+#     Correction vector capped at ±_MAX_DELTA (0.05) — same Lyapunov
+#     perturbation bound as the bridge files. Do not loosen this cap.
 # ═════════════════════════════════════════════════════════════════════════
 
 class ProcessingMode:
@@ -492,16 +496,17 @@ class DissonanceResolutionArchitecture:
                           ) -> Tuple[Optional[np.ndarray], str]:
         """DOP gate: check T, execute Agency Assertion (~A) or FAIL_SAFE.
 
-        Only fires in WATCHER mode. Returns (correction, outcome) where
-        outcome is 'ASSERTED', 'FAIL_SAFE', or 'SKIPPED'.
+        Only fires in WATCHER mode. Correction capped at ±_MAX_DELTA (0.05)
+        — the Lyapunov perturbation bound shared by all bridge files.
+        Returns (correction, outcome): 'ASSERTED' | 'FAIL_SAFE' | 'SKIPPED'.
         """
         if self._mode != ProcessingMode.WATCHER:
             return None, 'SKIPPED'
 
         if self.T >= self.T_COST:
-            # Execute ~A: pull toward S* with force proportional to dissonance
+            # Execute ~A: pull toward S* proportional to dissonance
             pull = float(np.clip(dissonance * 0.15, 0.02, 0.10))
-            correction = np.clip((S_STAR - s) * pull, -0.10, 0.10)
+            correction = np.clip((S_STAR - s) * pull, -_MAX_DELTA, _MAX_DELTA)
             self.T = float(np.clip(
                 self.T + self.T_SUCCESS_DELTA, self.T_MIN, self.T_MAX
             ))
@@ -987,8 +992,8 @@ class ResonanceOrchestrator:
 
         # ── PHASE 4b: DRA RESOLUTION — T-GATED AGENCY ASSERTION (~A) ──────────
         # When WATCHER mode: check T, execute correction or FAIL_SAFE.
-        # Successful ~A pulls toward S* and earns T. FAIL_SAFE preserves state
-        # and trusts the Lyapunov attractor to recover (GAS certificate).
+        # Correction capped at ±0.05 (_MAX_DELTA) — same Lyapunov bound as bridges.
+        # FAIL_SAFE trusts the GAS attractor to recover without active assertion.
         assertion_corr, assertion_outcome = self.dra.execute_assertion(self.s, dissonance)
         if assertion_corr is not None:
             self.s = np.clip(self.s + assertion_corr, 0.0, 1.0)
@@ -1033,7 +1038,7 @@ class ResonanceOrchestrator:
             duration = self.frustration_detector.frustration_duration(self.cycle)
             self.synapse.push_frustration_event(self.cycle, duration)
 
-        # ── PHASE 9: COMPUTE MANIFOLD STATE ────────────────────────────
+        # ── PHASE 9: COMPUTE MANIFOLD STATE ──═─────────────────────────
         state = PhaseSpaceState(
             cycle=self.cycle,
             relational_s=self.s.copy(),
