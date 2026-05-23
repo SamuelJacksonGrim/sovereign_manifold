@@ -1,0 +1,79 @@
+# Unified stack docker-compose for the Connected Architecture.
+# Assumes sibling directories: ../rfe-core2, ../unified-observer-architecture, ../projectsynapse
+# Lantern (Rust/Tauri daemon) is excluded — it runs on the host at port 3001.
+# Each referenced repo must have a Dockerfile. See ARCHITECTURE.md.
+
+version: '3.9'
+
+services:
+  rfe-core2:
+    build:
+      context: ../rfe-core2
+    ports:
+      - "8000:8000"
+      - "8765:8765"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8000/status"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - manifold
+
+  unified-observer:
+    build:
+      context: ../unified-observer-architecture
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - manifold
+
+  projectsynapse:
+    build:
+      context: ../projectsynapse
+    ports:
+      - "5001:5001"
+      - "8001:8001"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Lantern on host
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8001/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - manifold
+
+  sovereign-manifold:
+    build:
+      context: .
+    depends_on:
+      rfe-core2:
+        condition: service_healthy
+      unified-observer:
+        condition: service_healthy
+      projectsynapse:
+        condition: service_healthy
+    environment:
+      - RFE_ENDPOINT=http://rfe-core2:8000
+      - OBSERVER_ENDPOINT=http://unified-observer:5000
+      - SYNAPSE_HOST=projectsynapse
+      - LANTERN_HOST=host.docker.internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"  # Lantern on host
+    volumes:
+      - witness_data:/app
+    networks:
+      - manifold
+
+networks:
+  manifold:
+    driver: bridge
+
+volumes:
+  witness_data:
