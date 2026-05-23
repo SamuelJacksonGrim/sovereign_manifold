@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+witness_state.json
+logs/
+*.log
