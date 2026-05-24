@@ -150,7 +150,7 @@ except Exception as e:
 
 # 1d. E8-EEA v5
 try:
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'e8-eea'))
     from e8_eea_v5 import E8_EEA_v5, EmotionalState, E8Lattice
     import numpy as np
 
@@ -181,7 +181,7 @@ except Exception as e:
 
 # 1e. rfe-core2 standalone (10 cycles)
 try:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'rfe-core2'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'RFE-Core2'))
     from agents.generator import Generator
     from loop.autonomous_cycle import AutonomousCycle
     import numpy as np
@@ -267,19 +267,19 @@ else:
             return None, str(e)
 
     # Lantern mock
-    code, data = get("http://localhost:3001/health")
+    code, data = get("http://localhost:3002/health")
     lantern_up = code == 200
-    check("Lantern mock :3001/health", lantern_up,
+    check("Lantern mock :3002/health", lantern_up,
           str(data) if not lantern_up else f"nodes={data.get('nodes',0)}")
 
     if lantern_up:
-        code, data = post("http://localhost:3001/remember", {
+        code, data = post("http://localhost:3002/remember", {
             "source_type": "test", "source": "integration_test",
             "relation": "TEST_VECTOR", "target": '{"Love": 0.95}', "emotion": 0.5
         })
         check("Lantern mock POST /remember", code == 200, str(data))
 
-        code, data = get("http://localhost:3001/query?pattern=test")
+        code, data = get("http://localhost:3002/query?pattern=test")
         check("Lantern mock GET /query", code == 200 and isinstance(data, list),
               f"returned {len(data) if isinstance(data,list) else '?'} items")
 
@@ -359,9 +359,9 @@ else:
             if lan_connected:
                 # Check Lantern received writes
                 code, data = requests.get(
-                    "http://localhost:3001/query?pattern=relational_manifold"
+                    "http://localhost:3002/query?pattern=relational_manifold"
                 ).status_code, requests.get(
-                    "http://localhost:3001/query?pattern=relational_manifold"
+                    "http://localhost:3002/query?pattern=relational_manifold"
                 ).json()
                 check("Full stack: Lantern received manifold states",
                       isinstance(data, list) and len(data) >= 0,

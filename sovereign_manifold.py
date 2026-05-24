@@ -94,6 +94,9 @@ from collections import deque
 from scipy.linalg import solve_discrete_lyapunov
 
 # ── Optional dependencies ────────────────────────────────────────────────────────────────────────────────
+import sys as _sys, os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '..', 'e8-eea'))
+
 try:
     from e8_eea_v5 import E8_EEA_v5, EmotionalState as _EmotionalState
     E8_AVAILABLE = True
@@ -710,7 +713,7 @@ class LeviathanEEACoupler:
 # ═════════════════════════════════════════════════════════════════════════
 
 class SynapseCoordinationClient:
-    LANTERN_PORT = 3001
+    LANTERN_PORT = 3002
     SYNAPSE_PORT = 5001
 
     def __init__(self):
