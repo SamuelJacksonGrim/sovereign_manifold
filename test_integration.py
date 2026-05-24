@@ -150,7 +150,7 @@ except Exception as e:
 
 # 1d. E8-EEA v5
 try:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'stack'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'e8-eea'))
     from e8_eea_v5 import E8_EEA_v5, EmotionalState, E8Lattice
     import numpy as np
 
