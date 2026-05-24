@@ -713,7 +713,7 @@ class LeviathanEEACoupler:
 # ═════════════════════════════════════════════════════════════════════════
 
 class SynapseCoordinationClient:
-    LANTERN_PORT = 3001
+    LANTERN_PORT = 3002
     SYNAPSE_PORT = 5001
 
     def __init__(self):
