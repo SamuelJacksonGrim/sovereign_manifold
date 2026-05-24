@@ -150,7 +150,7 @@ except Exception as e:
 
 # 1d. E8-EEA v5
 try:
-    sys.path.insert(0, os.path.dirname(__file__))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'stack'))
     from e8_eea_v5 import E8_EEA_v5, EmotionalState, E8Lattice
     import numpy as np
 
@@ -181,7 +181,7 @@ except Exception as e:
 
 # 1e. rfe-core2 standalone (10 cycles)
 try:
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'rfe-core2'))
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'RFE-Core2'))
     from agents.generator import Generator
     from loop.autonomous_cycle import AutonomousCycle
     import numpy as np
