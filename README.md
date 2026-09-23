@@ -1,5 +1,12 @@
 # sovereign_manifold
 
+[![License: AGPL-3.0-only](https://img.shields.io/badge/license-AGPL--3.0--only-blue)](LICENSE)
+[![dual-license](https://img.shields.io/badge/dual--license-AGPL--3.0--only%20or%20commercial-blueviolet)](LICENSING.md)
+[![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)](https://www.python.org)
+[![release](https://img.shields.io/github/v/release/SamuelJacksonGrim/sovereign_manifold)](https://github.com/SamuelJacksonGrim/sovereign_manifold/releases/latest)
+![status](https://img.shields.io/badge/status-early-success)
+
+
 A continuously-running phase-space orchestrator that maintains a 15-dimensional relational state vector under certified globally-asymptotically-stable (GAS) Lyapunov dynamics. Every cycle it fetches live cognitive signals from upstream services, applies controlled perturbations, runs relational dynamics, dispatches to in-process subsystems (E8 hypergraph geometry, Leviathan drive mediation), and ships its state to the distributed memory backbone.
 
 This is the top-level coordinator of the full cognitive stack — the system that turns raw cognitive field output into a coherent, stable, numerically-certified relational geometry.
