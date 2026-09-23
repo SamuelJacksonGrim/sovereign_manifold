@@ -6,6 +6,15 @@
 [![release](https://img.shields.io/github/v/release/SamuelJacksonGrim/sovereign_manifold)](https://github.com/SamuelJacksonGrim/sovereign_manifold/releases/latest)
 ![status](https://img.shields.io/badge/status-early-success)
 
+## License
+
+This project is dual-licensed under **AGPL-3.0-only** OR a commercial license.
+
+- [LICENSE](LICENSE) — GNU AGPL-3.0-only (the free track)
+- [LICENSING.md](LICENSING.md) — how the two tracks work
+- [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) — the commercial agreement
+- [NOTICE](NOTICE) — copyright, SPDX identifier, and provenance
+
 
 A continuously-running phase-space orchestrator that maintains a 15-dimensional relational state vector under certified globally-asymptotically-stable (GAS) Lyapunov dynamics. Every cycle it fetches live cognitive signals from upstream services, applies controlled perturbations, runs relational dynamics, dispatches to in-process subsystems (E8 hypergraph geometry, Leviathan drive mediation), and ships its state to the distributed memory backbone.
 
@@ -359,6 +368,3 @@ python run_sustained.py
 
 ---
 
-## License
-
-Apache 2.0 — Samuel Jackson Grim
